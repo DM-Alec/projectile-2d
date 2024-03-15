@@ -1,0 +1,86 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Mar 15 12:21:30 2024
+
+@author: Alec
+"""
+
+# imported modules
+import numpy as np #numeric python
+import matplotlib.pyplot as plt #matlab style plotting 
+import scipy.integrate as sci #integration toolbox
+
+###define constant parameters
+
+#rocket
+m = 640 #kg
+#gravity
+g = -9.81 * m #negative since z is positive upwards
+
+#eq of motion, all in meters
+# F = m*a = m*zddot
+#z = alt above surface
+#zdot = velocity
+# zddot = acceleration
+#2nd ODE
+def derivatives(state, t):
+    global m
+    
+    #state vector
+    z = state[0] #not in use, so used as a placeholder for now
+    velz = state[1]
+    
+    #compute zdot, kinematic relation
+    zdot = velz
+    
+    ###compute total forces
+    
+
+    
+    #aerodynamics
+    aero = 0.0
+    
+    #thrust
+    thrust = 0.0
+    
+    F = g + aero + thrust
+    
+    #compute acceleration
+    zddot = F/m
+    
+    #compute statedot
+    statedot = np.asarray([zdot,zddot])
+    
+    return statedot
+
+###main script to integrate
+
+#initial conditions
+z0 = 0 #m
+velz0 = 164.0 #m/s
+stateinitial = np.asarray([z0,velz0])
+
+#time window
+tout = np.linspace(0,35,1000) #(ti, tf, num of datapoints) in sec
+
+#numerical integration
+stateout = sci.odeint(derivatives,stateinitial,tout)
+
+###rename variables
+zout = stateout[:,0]
+velzout = stateout[:,1]
+
+###plot
+
+#altitude
+plt.plot(tout,zout)
+plt.xlabel('Time (sec)')
+plt.ylabel('Altitude (m)')
+plt.grid()
+
+#velocity
+plt.figure()
+plt.plot(tout,velzout)
+plt.xlabel('Time (sec)')
+plt.ylabel('Speed (m/s)')
+plt.grid()
