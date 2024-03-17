@@ -12,11 +12,39 @@ import scipy.integrate as sci #integration toolbox
 
 ###define constant parameters
 
+#grav const
+
+G = 6.6742e-11 #Nm^2/kg^2
+
+#planet Earth
+Rplanet = 6.3781e6 #m
+mplanet = 5.9722e24 #kg
+
+
 #rocket
 m = 640 #kg
-#gravity
-g = -9.81 * m #negative since z is positive upwards
 
+#grav acceleration
+
+def g(z):
+    global Rplanet, mplanet
+    
+    r = np.sqrt(z**2)
+    
+    if r < Rplanet:
+        
+        a = 0.0 
+            
+    else:
+                
+        a = G*mplanet/(Rplanet**3)*r
+        
+    print(a)
+    
+    return a
+
+
+            
 #eq of motion, all in meters
 # F = m*a = m*zddot
 #z = alt above surface
@@ -36,27 +64,32 @@ def derivatives(state, t):
     ###compute total forces
     
 
-    
+    #gravity
+    gf = -g(z) * m    
     #aerodynamics
-    aero = 0.0
+    aerof = 0.0
     
     #thrust
-    thrust = 0.0
+    thrustf = 0.0
     
-    F = g + aero + thrust
+    F = gf + aerof + thrustf
     
     #compute acceleration
-    zddot = F/m
+    zddot = F / m
     
     #compute statedot
     statedot = np.asarray([zdot,zddot])
     
     return statedot
 
-###main script to integrate
+###MAIN script to integrate
+
+#test surface gravity
+print("surface gravity (m/s^2 = ", g(Rplanet))
+
 
 #initial conditions
-z0 = 0 #m
+z0 = Rplanet #m
 velz0 = 164.0 #m/s
 stateinitial = np.asarray([z0,velz0])
 
@@ -68,12 +101,13 @@ stateout = sci.odeint(derivatives,stateinitial,tout)
 
 ###rename variables
 zout = stateout[:,0]
+altitude = zout - Rplanet
 velzout = stateout[:,1]
 
 ###plot
 
 #altitude
-plt.plot(tout,zout)
+plt.plot(tout,altitude)
 plt.xlabel('Time (sec)')
 plt.ylabel('Altitude (m)')
 plt.grid()
