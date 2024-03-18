@@ -1,120 +1,65 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Mar 15 12:21:30 2024
+@author: Alec M
 
-@author: Alec
-"""
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.integrate as sci
 
-# imported modules
-import numpy as np #numeric python
-import matplotlib.pyplot as plt #matlab style plotting 
-import scipy.integrate as sci #integration toolbox
-
-###define constant parameters
-
-#grav const
-
-G = 6.6742e-11 #Nm^2/kg^2
-
-#planet Earth
-Rplanet = 6.3781e6 #m
-mplanet = 5.9722e24 #kg
-
-
-#rocket
-m = 640 #kg
-
-#grav acceleration
-
-def g(z):
-    global Rplanet, mplanet
-    
-    r = np.sqrt(z**2)
-    
-    if r < Rplanet:
-        
-        a = 0.0 
-            
-    else:
-                
-        a = G*mplanet/(Rplanet**3)*r
-        
-    print(a)
-    
-    return a
-
-
-            
-#eq of motion, all in meters
-# F = m*a = m*zddot
-#z = alt above surface
-#zdot = velocity
-# zddot = acceleration
-#2nd ODE
-def derivatives(state, t):
-    global m
-    
-    #state vector
-    z = state[0] #not in use, so used as a placeholder for now
-    velz = state[1]
-    
-    #compute zdot, kinematic relation
+def rocket_dynamics(state, t, m, g):
+    """Compute derivatives for rocket dynamics."""
+    z, velz = state
     zdot = velz
     
-    ###compute total forces
+    # Compute total forces
+    aero = 0.0  # Aerodynamics
+    thrust = 0.0  # Thrust
     
-
-    #gravity
-    gf = -g(z) * m    
-    #aerodynamics
-    aerof = 0.0
-    
-    #thrust
-    thrustf = 0.0
-    
-    F = gf + aerof + thrustf
-    
-    #compute acceleration
+    F = g + aero + thrust
     zddot = F / m
     
-    #compute statedot
-    statedot = np.asarray([zdot,zddot])
+    return [zdot, zddot]
+
+def simulate_rocket():
+    """Simulate rocket dynamics and plot results."""
+    # Define constant parameters
+    M = 640  # Rocket mass (kg)
+    G = -9.81 * M  # Gravitational force
     
-    return statedot
+    # Initial conditions
+    z0 = 0  # Initial altitude (m)
+    velz0 = 164.0  # Initial velocity (m/s)
+    state_initial = np.array([z0, velz0])
+    
+    # Time window
+    t_out = np.linspace(0, 35, 1000)  # Time vector (sec)
+    
+    # Numerical integration
+    state_out = sci.odeint(rocket_dynamics, state_initial, t_out, args=(M, G))
+    
+    # Extract variables
+    z_out = state_out[:, 0]  # Altitude
+    velz_out = state_out[:, 1]  # Velocity
+    
+    # Plot results
+    plt.figure(figsize=(10, 5))
+    
+    # Altitude plot
+    plt.subplot(1, 2, 1)
+    plt.plot(t_out, z_out)
+    plt.xlabel('Time (sec)')
+    plt.ylabel('Altitude (m)')
+    plt.title('Rocket Altitude')
+    plt.grid(True)
+    
+    # Velocity plot
+    plt.subplot(1, 2, 2)
+    plt.plot(t_out, velz_out)
+    plt.xlabel('Time (sec)')
+    plt.ylabel('Velocity (m/s)')
+    plt.title('Rocket Velocity')
+    plt.grid(True)
+    
+    plt.tight_layout()
+    plt.show()  # Display the plots
 
-###MAIN script to integrate
-
-#test surface gravity
-print("surface gravity (m/s^2 = ", g(Rplanet))
-
-
-#initial conditions
-z0 = Rplanet #m
-velz0 = 164.0 #m/s
-stateinitial = np.asarray([z0,velz0])
-
-#time window
-tout = np.linspace(0,35,1000) #(ti, tf, num of datapoints) in sec
-
-#numerical integration
-stateout = sci.odeint(derivatives,stateinitial,tout)
-
-###rename variables
-zout = stateout[:,0]
-altitude = zout - Rplanet
-velzout = stateout[:,1]
-
-###plot
-
-#altitude
-plt.plot(tout,altitude)
-plt.xlabel('Time (sec)')
-plt.ylabel('Altitude (m)')
-plt.grid()
-
-#velocity
-plt.figure()
-plt.plot(tout,velzout)
-plt.xlabel('Time (sec)')
-plt.ylabel('Speed (m/s)')
-plt.grid()
+if __name__ == "__main__":
+    simulate_rocket()
