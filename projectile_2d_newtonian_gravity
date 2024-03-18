@@ -1,0 +1,142 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Mar 15 14:40:27 2024
+
+@author: Alec
+"""
+
+# imported modules
+import numpy as np #numeric python
+import matplotlib.pyplot as plt #matlab style plotting 
+import scipy.integrate as sci #integration toolbox
+
+###define constant parameters
+
+#grav const
+
+G = 6.6742e-11 #Nm^2/kg^2
+
+#planet Earth
+Rplanet = 6.3781e6 #m
+mplanet = 5.9722e24 #kg
+
+
+#rocket
+m = 640 #kg
+
+#grav acceleration
+
+def g(x, z):
+    global Rplanet, mplanet
+    
+    r = np.sqrt(x**2 + z**2)
+    
+    if r < Rplanet:
+        accelx = 0.0
+        accelz = 0.0
+            
+    else:
+                
+        accelx = G*mplanet/(r**3)*x
+        accelz = G*mplanet/(r**3)*z
+        
+    return np.asarray([accelx, accelz])
+
+
+            
+#eq of motion, all in meters
+# F = m*a = m*zddot
+#x = equatorial line
+#z = altitude from center of planet to poles
+#zdot = velocity
+# zddot = acceleration
+#2nd ODE
+def derivatives(state, t):
+    global m
+    
+    #state vector
+    x = state[0]
+    z = state[1] #not in use, so used as a placeholder for now
+    velx = state[2]
+    velz = state[3]
+    
+    #compute zdot, kinematic relation
+    xdot = velx
+    zdot = velz
+    
+    ###compute total forces
+    
+
+    #gravity
+    gf = -g(x, z) * m    
+    #aerodynamics
+    aerof = np.asarray([0.0,0.0])
+    
+    #thrust
+    thrustf = np.asarray([0.0,0.0])
+    
+    F = gf + aerof + thrustf
+    
+    #compute acceleration
+    ddot = F / m
+    
+    #compute statedot
+    statedot = np.asarray([xdot,zdot,ddot[0],ddot[1]])
+    
+    return statedot
+
+###MAIN script to integrate
+
+#test surface gravity
+print("surface gravity (m/s^2 = ", g(0,Rplanet))
+
+
+#initial conditions
+x0 = Rplanet + 600000 #(m)
+z0 = 0.0
+r0 = np.sqrt(x0**2 + z0**2)
+velx0 = 0.0
+velz0 = np.sqrt(G*mplanet/r0)*1.1 #(m/s)
+stateinitial = np.asarray([x0, z0, velx0, velz0])
+
+#time window
+period = 2*np.pi/np.sqrt(G*mplanet)*r0**(3.0/2.0)*1.5 # 1.5 shows elliptical orbit
+tout = np.linspace(0,period,1000) #(ti, tf, num of datapoints) in sec
+
+#numerical integration
+stateout = sci.odeint(derivatives,stateinitial,tout)
+
+###rename variables
+xout = stateout[:, 0]
+zout = stateout[:, 1]
+altitude = np.sqrt(xout**2 + zout**2) - Rplanet
+velxout = stateout[:, 2]
+velzout = stateout[:, 3]
+velout = np.sqrt(velxout**2 + velzout**2)
+
+
+###plot
+
+#altitude
+plt.plot(tout,altitude)
+plt.xlabel('Time (sec)')
+plt.ylabel('Altitude (m)')
+plt.grid()
+
+#velocity
+plt.figure()
+plt.plot(tout,velzout)
+plt.xlabel('Time (sec)')
+plt.ylabel('Speed (m/s)')
+plt.grid()
+
+#2d orbit
+plt.figure()
+plt.plot(xout, zout, 'r-', label = 'Orbit' )
+plt.plot(xout[0],zout[0],'g*')
+theta = np.linspace(0,2*np.pi,100)
+xplanet = Rplanet*np.sin(theta)
+yplanet = Rplanet *np.cos(theta)
+plt.plot(xplanet, yplanet, 'b-', label = 'Planet')
+plt.grid()
+plt.legend()
